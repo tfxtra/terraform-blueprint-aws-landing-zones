@@ -8,15 +8,29 @@ read -p "What's your preferred AWS region? (default: us-east-1): " region
 read -p "What's the name of your Terraform Cloud organization?: " ORG_NAME
 echo ""
 
+region="${region:=us-east-1}"
+
+function setupRemote() {
+    if [ ! -f "state.tf" ]; then
+        cp state.tf.tmpl state.tf
+        sed -i "" 's/#{org_name}/'$ORG_NAME'/' state.tf
+    fi
+}
+
 for i in $(find . -name "[0-9][0-9]-*" -type d -maxdepth 1);
 do
   for f in $(find $i -name "*.tf" -type f -maxdepth 1);
   do 
       fname=$(basename $f)
       cat $f >> $fname
+      echo -e "\n" >> $fname
   done
+  if [ -f "$i/.cloud" ]; then
+    setupRemote
+  fi
+  echo "Running $i..."
   terraform init
-  AWS_ACCESS_KEY_ID=$key AWS_SECRET_ACCESS_KEY=$secret terraform apply -auto-approve
+  TF_VAR_aws_access_key=$key TF_VAR_aws_secret_key=$secret TF_VAR_project_name=$project TF_VAR_region=$region TF_VAR_admin_email=$email TF_VAR_org_name=$ORG_NAME terraform apply -auto-approve -compact-warnings
 done
 
 for f in $(find ./base -name "*.tf" -type f -maxdepth 1);
@@ -25,10 +39,5 @@ do
     cat $f >> $fname
 done
 
-if [ ! -f "state.tf" ]; then
-    cp state.tf.tmpl state.tf
-    sed -i "" 's/#{org_name}/'$ORG_NAME'/' state.tf
-fi
-
-terraform init -migrate-state
-terraform plan -var project_name=$project -var region=$region -var admin_email=$email
+terraform init 
+terraform plan 
