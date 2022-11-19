@@ -35,3 +35,4 @@ terraform.rc
 /main.tf
 /state.tf
 /variables.tf
+/outputs.tf

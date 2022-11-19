@@ -4,3 +4,4 @@ rm main.tf
 rm variables.tf
 rm state.tf
 rm .terraform/terraform.tfstate
+rm outputs.tf
